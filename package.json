@@ -1,0 +1,46 @@
+{
+  "name": "Spell-checker-Chrome-Extension",
+  "version": "0.1.0",
+  "description": "TensorFlow chrome extension for detectiong spell error and correct it in Vietnamese",
+  "keywords": [
+    "tensorflow",
+    "tf",
+    "tensor",
+    "machine learning",
+    "ml",
+    "ai",
+    "neural networks",
+    "neuralnetworks",
+    "deeplearning",
+    "model",
+    "text spelling",
+    "spelling check",
+    "drafting text",
+    "google"
+  ],
+  "scripts": {
+    "copy": "cp src/content.js dist/src/",
+    "build": "parcel build src/background.js -d dist/src/ -o background && npm run copy",
+    "watch": "npm run copy && parcel watch src/background.js --hmr-hostname localhost -d dist/src/ -o background"
+  },
+  "author": "Duyen Ho <hthduyen.dut@gmail.com>",
+  "contributors": [
+    {
+      "name": "Duyen Ho",
+      "email": "hthduyen.dut@gmail.com",
+      "url": "https://www.facebook.com/RHV5w6pu/"
+    }
+  ],
+  "license": "Apache 2.0",
+  "devDependencies": {
+    "@babel/plugin-transform-runtime": "^7.12.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "clang-format": "^1.2.3",
+    "parcel-bundler": "^1.7.1"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^2.6.0"
+  }
+}

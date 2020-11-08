@@ -1,0 +1,36 @@
+{
+	"name": "Spell checker Chrome Extension",
+	"version": "0.1",
+	"description": "TensorFlow chrome extension for detectiong spell error and correct it in Vietnamese",
+	"homepage_url": "https://www.facebook.com/RHV5w6pu/",
+	"author": "Duyen Ho ",
+	"permissions": [
+	  "activeTab",
+	  "declarativeContent",
+	  "webRequest",
+	  "webRequestBlocking",
+	  "<all_urls>",
+	  "storage",
+	  "tabs",
+	  "alarms",
+	  "webNavigation",
+	  "http://vps.ziinhh.site:8000/model.json",
+	  "http://vps.ziinhh.site:8000/group1-shard2of2.bin",
+	  "http://vps.ziinhh.site:8000/group1-shard1of2.bin"
+	],
+	"background": {
+	  "scripts": ["src/background.js"],
+	  "persistent": true
+	},
+	"content_scripts": [
+	  {
+		"matches": ["http://*/*", "https://*/*", "http://vps.ziinhh.site:8000/*"],
+		"js": ["src/content.js"],
+		"all_frames": true,
+		"run_at": "document_start"
+	  }
+	],
+	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+	"manifest_version": 2
+  }
+  
