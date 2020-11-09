@@ -128,6 +128,7 @@ class BackgroundProcessing {
 
 	async predict(sentence) {
 		console.log('==on predict: ', sentence);
+		// sentence = 'Diệc dung ikipedia lhư ngũồn tham chảo đã gâi rạ tanh uận vổ tính ở ca ó làm nó cos thể bi phas hoài';
 		try {
 			var ngrams = this.gen_ngrams(sentence, Math.min(NGRAM, sentence.split(' ').length))
 			var guessed_ngrams = [];
@@ -165,21 +166,32 @@ class BackgroundProcessing {
 		console.log('Loaded model', this.model);
 	}
 
+	correctSentence(sentence){
+		return this.predict(sentence).then(function(res){
+			return res;
+		});
+	}
+
 	addListener() {
 		var self = this;
 		chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-			console.log("background: ", request);
 			if (!self.model) {
 				console.log('Model not loaded yet, delaying...');
 				setTimeout(() => { self.addListener() }, 5000);
 				return;
 			}
+			var res = self.correctSentence(request.message).then(function(result){
+				return result;
+			});
+			console.log("background: ", request, " | ", res);
 			sendResponse({
-				message: self.predict(request.message)
+				message: res
 			});
 
 		});
 	}
+
+	
 
 }
 

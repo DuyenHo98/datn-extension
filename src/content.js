@@ -33,9 +33,18 @@ function init() {
 		validInput.forEach(function (el) {
 			el.addEventListener('input', (e) => {
 				if (el.value.length > 10) {
-					chrome.runtime.sendMessage({ message: el.value }, function(response) {
-						console.log("response: ", response);
-					});
+					if (!el.isSetTimeout) {
+						console.log('== voday');
+						el.isSetTimeout = true;
+						el.timeout = setTimeout(function () {
+							chrome.runtime.sendMessage({
+								message: el.value
+							}, function (response) {
+								console.log("response: ", response);
+								el.isSetTimeout = false;
+							});
+						}, 10000)
+					}
 				}
 			})
 		})
@@ -50,4 +59,3 @@ document.onreadystatechange = function () {
 
 	}
 }
-
