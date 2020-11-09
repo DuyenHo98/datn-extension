@@ -43,7 +43,7 @@ function init() {
 								console.log("response: ", response);
 								el.isSetTimeout = false;
 							});
-						}, 10000)
+						}, 6000)
 					}
 				}
 			})

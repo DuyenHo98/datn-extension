@@ -155,6 +155,7 @@ class BackgroundProcessing {
 				out += this.mode(listCounter[i]) + " ";
 			}
 			console.log('== ', out)
+			return out;
 		} catch (e) {
 			console.log("error: ", e);
 		}
@@ -166,32 +167,21 @@ class BackgroundProcessing {
 		console.log('Loaded model', this.model);
 	}
 
-	correctSentence(sentence){
-		return this.predict(sentence).then(function(res){
-			return res;
-		});
-	}
-
 	addListener() {
 		var self = this;
-		chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+		chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
 			if (!self.model) {
 				console.log('Model not loaded yet, delaying...');
 				setTimeout(() => { self.addListener() }, 5000);
 				return;
 			}
-			var res = self.correctSentence(request.message).then(function(result){
-				return result;
+			await self.predict(request.message).then(function(res){
+				sendResponse({
+					message: res
+				});
 			});
-			console.log("background: ", request, " | ", res);
-			sendResponse({
-				message: res
-			});
-
 		});
 	}
-
-	
 
 }
 
