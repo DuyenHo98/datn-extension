@@ -169,7 +169,7 @@ class BackgroundProcessing {
 
 	addListener() {
 		var self = this;
-		chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+		browser.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
 			if (!self.model) {
 				console.log('Model not loaded yet, delaying...');
 				setTimeout(() => { self.addListener() }, 5000);
