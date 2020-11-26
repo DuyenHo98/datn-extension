@@ -126,8 +126,18 @@ class BackgroundProcessing {
 		return maxEl;
 	}
 
+	preValidate(sentence){
+		var validCheckArr = '!\"\',\-\.:;?_\(\)';
+		for(var i in validCheckArr){
+			sentence = sentence.replaceAll(validCheckArr[i], "");
+		}
+		return sentence.replaceAll("  "," ").replaceAll("\u200c", "");
+	}
+
 	async predict(sentence) {
 		console.log('==on predict: ', sentence);
+		sentence = this.preValidate(sentence);
+	    sentence = sentence.trim();
 		// sentence = 'Diệc dung ikipedia lhư ngũồn tham chảo đã gâi rạ tanh uận vổ tính ở ca ó làm nó cos thể bi phas hoài';
 		try {
 			var ngrams = this.gen_ngrams(sentence, Math.min(NGRAM, sentence.split(' ').length))
@@ -137,6 +147,7 @@ class BackgroundProcessing {
 					this.decode(this.model.predictOnBatch(this.encode(ngrams[i]).toTensor().reshape([1, MAXLEN, input_shape]))).replace(/\u0000/g, "")
 				);
 			}
+
 			var len = guessed_ngrams.length + Math.min(sentence.split(' ').length, NGRAM) - 1
 			var listCounter = [];
 			for (let i = 0; i < len; i++) {
@@ -165,19 +176,25 @@ class BackgroundProcessing {
 		console.log('Loading model...');
 		this.model = await tf.loadLayersModel(MODEL_PATH);
 		console.log('Loaded model', this.model);
+		// if(this.model){
+		// 	this.model.predict('ddaay la moojt vis duj');
+		// }
 	}
 
 	addListener() {
 		var self = this;
-		browser.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-			if (!self.model) {
+		browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+			if (!this.model) {
 				console.log('Model not loaded yet, delaying...');
-				setTimeout(() => { self.addListener() }, 5000);
+				setTimeout(() => { this.addListener() }, 5000);
 				return;
 			}
-			await self.predict(request.message).then(function(res){
+			var sentence = this.preValidate(request.message);
+			sentence = sentence.trim();
+			await this.predict(sentence).then(function(res){
 				sendResponse({
-					message: res
+					out: res,
+					in: sentence
 				});
 			});
 		});

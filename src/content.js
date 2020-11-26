@@ -235,6 +235,7 @@ class GDocsUtil {
 	//- - - - - - - - - - - - - - - - - - - -
 	findWordAtCaret(googleDocument) {
 		var line = googleDocument.text[googleDocument.caret.line];
+		if(!line) return;
 		if (line.length == 0)
 			return {
 				word: '',
@@ -285,7 +286,7 @@ class GDocsUtil {
 	//- - - - - - - - - - - - - - - - - - - -
 	//Highlight
 	//- - - - - - - - - - - - - - - - - - - -
-	highlight(startIndex, endIndex, googleDocument) {
+	highlight(startIndex, endIndex, googleDocument, rawWord, newWord) {
 		for (var i = 0; i < googleDocument.nodes.length; i++) {
 			//Highlight node if its index overlap with the provided index
 			if (
@@ -332,7 +333,10 @@ class GDocsUtil {
 					nodeRect.top - parentRect.top,
 					rightPosOffset - leftPosOffset,
 					nodeRect.height,
-					googleDocument.nodes[i].lineElement
+					googleDocument.nodes[i].lineElement,
+					googleDocument.nodes[i].index,
+					rawWord,
+					newWord
 				);
 			}
 		}
@@ -373,9 +377,10 @@ class GDocsUtil {
 		return node.text.substring(start, end);
 	}
 
-	createHighlightNode(left, top, width, height, parentElement) {
+	createHighlightNode(left, top, width, height, parentElement, parentIndex, rawWord, newWord) {
+		console.log('createHighlightNode ');
 		var highlightNode = document.createElement('div');
-		highlightNode.setAttribute('class', 'dictus_highlight_node');
+		highlightNode.setAttribute('class', 'dictus_highlight_node dictus_highlight_node_' + parentIndex + " dictus_highlight_node_line_" + rawWord);
 		highlightNode.style.position = 'absolute';
 		highlightNode.style.left = left + 'px';
 		highlightNode.style.top = top + 'px';
@@ -383,21 +388,33 @@ class GDocsUtil {
 		highlightNode.style.height = height + 'px';
 		highlightNode.style.backgroundColor = '#D1E3FF';
 		highlightNode.style.color = '#D1E3FF';
-		highlightNode.style.borderBottomColor = '#FFFF00';
-		//Fuzzy edges on the highlight
 		highlightNode.style.boxShadow = '0px 0px 1px 1px #D1E3FF';
-
+		highlightNode.style.on
+		highlightNode.addEventListener("click", () => console.log('clicked '));
 		parentElement.appendChild(highlightNode);
 	}
 
-	removeHighlightNodes() {
+	removeAllHighlightNodes() {
 		var highlightNodes = document.querySelectorAll(
 			'.dictus_highlight_node'
 		);
-		for (i = 0; i < highlightNodes.length; i++) {
+		for (let i = 0; i < highlightNodes.length; i++) {
 			highlightNodes[i].remove();
 		}
 	}
+
+	removeHighlightonNodes(nodeIndex) {
+		var highlightNodes = document.querySelectorAll(
+			'.dictus_highlight_node_' + nodeIndex
+		);
+
+		for (let i = 0; i < highlightNodes.length; i++) {
+			console.log('voday di');
+			highlightNodes[i].remove();
+		}
+	}
+
+	
 
 	//Index: The index on the local element
 	getPositionOfIndex(index, element, simulateElement) {
@@ -430,9 +447,27 @@ class GDocsUtil {
 		return leftPosition;
 	}
 
+	findNodeInAllDocument(node, googleDocument){
+		var lineElement = node.getElementsByClassName('kix-lineview')[0];
+		for(let i = 0; i < googleDocument.nodes.length; i++){
+			if(googleDocument.nodes[i].lineElement == lineElement){
+				return googleDocument.nodes[i];
+			}
+		}
+		return null;
+	}
 
-
-
+	convertLocalPosToGlobleNode(text, parentNode){
+		var lineElementText = preValidate(parentNode.lineElement.innerText);
+		var startLocalPos = lineElementText.indexOf(text);
+		console.log("parentNode.lineElement.innerText ", parentNode.lineElement.innerText, " | ", text, " | ", startLocalPos);
+		var startGloblePos = startLocalPos + parentNode.index;
+		var endGloblePos = startGloblePos + text.length;
+		return {
+			startIndex: startGloblePos,
+			endIndex: endGloblePos
+		}
+	}
 
 }
 
@@ -454,8 +489,12 @@ function getValidInput(allInputs) {
 	var results = [];
 	for (var i in allInputs) {
 		if (allInputs[i].type == 'text' || allInputs[i].type == "textarea") {
-			// console.log('=== getValidInput in ', allInputs[i])
-			results.push(allInputs[i]);
+			console.log('=== getValidInput in ', allInputs[i], allInputs[i] instanceof Array)
+			if(allInputs[i] instanceof Array){
+				results.push(allInputs[i][0]);
+			}else{
+				results.push(allInputs[i]);
+			}
 		}
 	}
 	console.log("getValidInput ", JSON.stringify(results));
@@ -463,85 +502,113 @@ function getValidInput(allInputs) {
 }
 
 function getValidInputForGDocs() {
-	var gDocs = new GDocsUtil();
-	var docs = gDocs.getGoogleDocument();
-	// console.log('hihi ', gDocs.getGoogleDocument());
-
-	gDocs.highlight(10, 20, docs);
-
-	console.log('find ', gDocs.findWordAtCaret(docs));
-	// var allParagraph = document.getElementsByClassName(GDocsClassName.paragraph);
-	// var results = [];
-	// for (var i in allParagraph) {
-	// 	if (allParagraph[i].outerText.length > 0) {
-	// 		results.push(allParagraph[i]);
-	// 	}
-	// }
-	// console.log("== getValidInputForGDocs: ", JSON.stringify(results));
-	// return results;
-}
-
-function appendNodeCorrect(target, newMsg, rawMsg) {
-	// var node = document.createElement("node-correct");
-	// target.parentNode.appendChild(node);
-	// // console.log
-	// var textnode = document.createTextNode(msg);
-	// // textnode.style.borderBottom="3px red dashed;";
-	// node.appendChild(textnode);
-	// target.parentNode.appendChild(node);
-	// target.style.borderBottom = "3px dashed #0000FF";
-	// console.log('=== appendNodeCorrect ', textnode);
-
-	var outSplited = newMsg.split(' ');
-	var rawSplited = rawMsg.split(' ');
-	for (var i = 0; i < rawSplited.length; i++) {
-		if (outSplited[i] && outSplited[i].length > 0 && outSplited[i] != rawSplited[i]) {
-			// rawSplited[i] = "<strong>" + rawSplited[i] + "</strong>";
-			rawMsg = rawMsg.replace(rawSplited[i], "<strong>" + rawSplited[i] + "</strong>")
+	var allParagraph = document.getElementsByClassName(GDocsClassName.wordNode);
+	var results = [];
+	for (var i in allParagraph) {
+		if (allParagraph[i] && allParagraph[i].innerText && allParagraph[i].innerText.length > 0) {
+			allParagraph[i].value = allParagraph[i].innerText;
+			allParagraph[i].type = 'text';
+			results.push(allParagraph[i]);
 		}
-
-		// con
-		sole.log('== ', i, " ", rawSplited[i], " - ", outSplited[i]);
 	}
-	// target.html(rawMsg);
+	console.log("== getValidInputForGDocs: ", JSON.stringify(results));
+	return results;
 }
+
+// function init() {
+	
+// 	// var allInputs = getInputsByValue();
+// 	var allInputs = getValidInputForGDocs();
+// 	if (allInputs.length == 0) {
+// 		console.log('=== found 0 input');
+// 	} else {
+
+// 		const content = document.getElementsByClassName('kix-wordhtmlgenerator-word-node')[0]
+// 		console.log('=== ahih content ', content);		
+// 		content.addEventListener('DOMSubtreeModified', () => console.log('change'))
+
+// 		var validInput = getValidInput(allInputs);
+// 		console.log('== ahihi loop1 ', validInput);
+// 		validInput.forEach(function (el) {
+// 			console.log('=== el ', el);
+// 			el.addEventListener('DOMSubtreeModified', (e) => {
+// 				console.log('in: ', el, " | ", el.value)
+// 				if (el.value.length > 10) {
+// 					if (!el.isSetTimeout) {
+// 						console.log('== voday');
+// 						el.isSetTimeout = true;
+// 						el.timeout = setTimeout(function () {
+// 							browser.runtime.sendMessage({
+// 								message: el.value
+// 							}, function (response) {
+// 								console.log("response: ", response);
+// 								appendNodeCorrect(el, response.message, el.value)
+// 								el.isSetTimeout = false;
+// 							});
+// 						}, 1000)
+// 					}
+// 				}
+// 			})
+// 		})
+// 	}
+// }
 
 function init() {
-	
-	var allInputs = getInputsByValue();
-	getValidInputForGDocs();
+	var allInputs = getValidInputForGDocs();
 	if (allInputs.length == 0) {
 		console.log('=== found 0 input');
 	} else {
-		var validInput = getValidInput(allInputs);
-		validInput.forEach(function (el) {
-			el.addEventListener('input', (e) => {
-				console.log('in: ', el, " | ", el.value)
-				if (el.value.length > 10) {
-					if (!el.isSetTimeout) {
-						console.log('== voday');
-						el.isSetTimeout = true;
-						el.timeout = setTimeout(function () {
-							browser.runtime.sendMessage({
-								message: el.value
-							}, function (response) {
-								console.log("response: ", response);
-								appendNodeCorrect(el, response.message, el.value)
-								el.isSetTimeout = false;
-							});
-						}, 1000)
+		var gDoc = new GDocsUtil();
+		var allDocument = gDoc.getGoogleDocument();
+		// gDoc.highlight(52, 56, allDocument);
+		var allParagraph = document.getElementsByClassName('kix-paginateddocumentplugin')[0];
+		allParagraph.addEventListener('DOMSubtreeModified', () => {
+			if(!allParagraph.isTimeOut){
+				allParagraph.isTimeOut = true;
+				if (gDoc.containsUserCaretDom()) {
+					caret = gDoc.getUserCaretDom();
+					caretRect = caret.getBoundingClientRect();
+					var allSpan = allParagraph.querySelectorAll(gDoc.classNames.paragraph);
+					for(let i = 0; i < allSpan.length; i++){
+						if(allSpan[i] && gDoc.doesRectsOverlap(allSpan[i].getBoundingClientRect(), caretRect)){
+							this.idTimeOutGetText && clearTimeout(this.idTimeOutGetText);
+							this.idTimeOutGetText = setTimeout(function(){
+								var text = preValidate(allSpan[i].innerText);
+								browser.runtime.sendMessage({
+									message: text
+								}, function (response) {
+									console.log("response: ", response.in, response.out);
+									var gNode = gDoc.findNodeInAllDocument(allSpan[i], allDocument);
+									if(gNode){
+										processAppendNodeCorrect(response.in, response.out, text, gNode, gDoc, allDocument);
+									}
+									allParagraph.isTimeOut = false;
+								});
+							}, 2000)
+						}
 					}
 				}
-			})
-		})
+			}
+		})		
 	}
 }
 
-function test(){
-	var g = new GDocsUtil();
-	console.log('== tét ', g.getUserCaretDom());
+function processAppendNodeCorrect(rawMsg, newMsg, rawMsg1, node, gDoc, allDocument){
+	gDoc.removeHighlightonNodes(node.index);
+	var newSplited = newMsg.split(' ');
+	var rawSplited = rawMsg.split(' ');
+	for (var i = 0; i < rawSplited.length; i++) {
+		if (newSplited[i] && newSplited[i].length > 0 && newSplited[i] != rawSplited[i]) {
+			var pos = gDoc.convertLocalPosToGlobleNode(rawSplited[i], node);
+			console.log("pos ", JSON.stringify(pos), " | ", allDocument);
+			gDoc.highlight(pos.startIndex, pos.endIndex, gDoc.getGoogleDocument(), rawSplited[i], newSplited[i]);
+		}
+	}
 }
 
+function preValidate(sentence){
+	return sentence.replaceAll("\u200c", "");
+}
 
 
 document.onreadystatechange = function () {
@@ -549,10 +616,5 @@ document.onreadystatechange = function () {
 		setTimeout(function () {
 			init();
 		}, 500);
-
-		// setInterval(function(){
-		// 	test();
-		// }, 1000);
-
 	}
 }
