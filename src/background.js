@@ -131,7 +131,7 @@ class BackgroundProcessing {
 		for(var i in validCheckArr){
 			sentence = sentence.replaceAll(validCheckArr[i], "");
 		}
-		return sentence.replaceAll("  "," ").replaceAll("\u200c", "");
+		return sentence.replace(/ +(?= )/g,'').replaceAll("\u200c", "");
 	}
 
 	async predict(sentence) {

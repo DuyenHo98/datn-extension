@@ -235,7 +235,7 @@ class GDocsUtil {
 	//- - - - - - - - - - - - - - - - - - - -
 	findWordAtCaret(googleDocument) {
 		var line = googleDocument.text[googleDocument.caret.line];
-		if(!line) return;
+		if (!line) return;
 		if (line.length == 0)
 			return {
 				word: '',
@@ -378,7 +378,7 @@ class GDocsUtil {
 	}
 
 	createHighlightNode(left, top, width, height, parentElement, parentIndex, rawWord, newWord) {
-		console.log('createHighlightNode ');
+		console.log('createHighlightNode ', rawWord, newWord);
 		var highlightNode = document.createElement('div');
 		highlightNode.setAttribute('class', 'dictus_highlight_node dictus_highlight_node_' + parentIndex + " dictus_highlight_node_line_" + rawWord);
 		highlightNode.style.position = 'absolute';
@@ -386,12 +386,51 @@ class GDocsUtil {
 		highlightNode.style.top = top + 'px';
 		highlightNode.style.width = width + 'px';
 		highlightNode.style.height = height + 'px';
-		highlightNode.style.backgroundColor = '#D1E3FF';
-		highlightNode.style.color = '#D1E3FF';
-		highlightNode.style.boxShadow = '0px 0px 1px 1px #D1E3FF';
-		highlightNode.style.on
-		highlightNode.addEventListener("click", () => console.log('clicked '));
+		highlightNode.style.borderBottomColor = '#FF0000';
+		highlightNode.style.borderBottomStyle = 'solid';
+		highlightNode.style.borderBottomWidth = 2 + 'px';
+		highlightNode.style.opacity = 0.5;
+		highlightNode.style.zIndex = 999;
+		if(!this.suggestNode){
+			this.initSuggestNode(parentElement);
+		}
+		highlightNode.addEventListener("click", () => {
+			console.log('onClick ', newWord);
+			this.suggestNode.style.left = left + 'px';
+			this.suggestNode.style.top = top - 50 + 'px';
+			this.suggestNode.getElementsByClassName('dictus_suggest_word_node')[0].innerHTML = newWord;
+			this.suggestNode.rawMsg = rawWord;
+		});
 		parentElement.appendChild(highlightNode);
+	}
+
+
+	initSuggestNode(parentElement){
+		this.suggestNode = document.createElement('div');
+		this.suggestNode.setAttribute('class', 'dictus_suggest_node');
+		this.suggestNode.style.position = 'absolute';
+		this.suggestNode.style.width = 50 + 'px';
+		this.suggestNode.style.height = 30 + 'px';
+		this.suggestNode.style.borderColor = '#000000';
+		this.suggestNode.style.borderStyle = 'solid';
+		this.suggestNode.style.borderWidth = 2 + 'px';
+		this.suggestNode.style.zIndex = 999;
+		this.suggestNode.addEventListener("click", () => console.log('clicked '));
+		parentElement.appendChild(this.suggestNode);
+
+		var correctWordNode = document.createElement('div');
+		correctWordNode.setAttribute('class', 'dictus_suggest_word_node');
+		correctWordNode.style.position = 'absolute';
+		correctWordNode.style.width = 50 + 'px';
+		correctWordNode.style.height = 30 + 'px';
+		correctWordNode.style.zIndex = 999;
+		correctWordNode.addEventListener("click", () => {
+			var elementText = parentElement.innerText;
+			console.log('correct ', parentElement.innerText, " | ", correctWordNode.innerHTML);
+			elementText = elementText.substring(0, elementText.indexOf())
+		});
+		this.suggestNode.appendChild(correctWordNode);
+		return this.suggestNode;
 	}
 
 	removeAllHighlightNodes() {
@@ -414,7 +453,7 @@ class GDocsUtil {
 		}
 	}
 
-	
+
 
 	//Index: The index on the local element
 	getPositionOfIndex(index, element, simulateElement) {
@@ -447,20 +486,20 @@ class GDocsUtil {
 		return leftPosition;
 	}
 
-	findNodeInAllDocument(node, googleDocument){
+	findNodeInAllDocument(node, googleDocument) {
 		var lineElement = node.getElementsByClassName('kix-lineview')[0];
-		for(let i = 0; i < googleDocument.nodes.length; i++){
-			if(googleDocument.nodes[i].lineElement == lineElement){
+		for (let i = 0; i < googleDocument.nodes.length; i++) {
+			if (googleDocument.nodes[i].lineElement == lineElement) {
 				return googleDocument.nodes[i];
 			}
 		}
 		return null;
 	}
 
-	convertLocalPosToGlobleNode(text, parentNode){
+	convertLocalPosToGlobleNode(text, parentNode, start) {
 		var lineElementText = preValidate(parentNode.lineElement.innerText);
-		var startLocalPos = lineElementText.indexOf(text);
-		console.log("parentNode.lineElement.innerText ", parentNode.lineElement.innerText, " | ", text, " | ", startLocalPos);
+		var startLocalPos = lineElementText.indexOf(text, start);
+		// console.log("parentNode.lineElement.innerText ", parentNode.lineElement.innerText, " | ", text, " | ", startLocalPos);
 		var startGloblePos = startLocalPos + parentNode.index;
 		var endGloblePos = startGloblePos + text.length;
 		return {
@@ -490,9 +529,9 @@ function getValidInput(allInputs) {
 	for (var i in allInputs) {
 		if (allInputs[i].type == 'text' || allInputs[i].type == "textarea") {
 			console.log('=== getValidInput in ', allInputs[i], allInputs[i] instanceof Array)
-			if(allInputs[i] instanceof Array){
+			if (allInputs[i] instanceof Array) {
 				results.push(allInputs[i][0]);
-			}else{
+			} else {
 				results.push(allInputs[i]);
 			}
 		}
@@ -516,7 +555,7 @@ function getValidInputForGDocs() {
 }
 
 // function init() {
-	
+
 // 	// var allInputs = getInputsByValue();
 // 	var allInputs = getValidInputForGDocs();
 // 	if (allInputs.length == 0) {
@@ -560,54 +599,65 @@ function init() {
 	} else {
 		var gDoc = new GDocsUtil();
 		var allDocument = gDoc.getGoogleDocument();
-		// gDoc.highlight(52, 56, allDocument);
 		var allParagraph = document.getElementsByClassName('kix-paginateddocumentplugin')[0];
 		allParagraph.addEventListener('DOMSubtreeModified', () => {
-			if(!allParagraph.isTimeOut){
-				allParagraph.isTimeOut = true;
-				if (gDoc.containsUserCaretDom()) {
-					caret = gDoc.getUserCaretDom();
-					caretRect = caret.getBoundingClientRect();
+			if (gDoc.containsUserCaretDom()) {
+				caret = gDoc.getUserCaretDom();
+				caretRect = caret.getBoundingClientRect();
+				if (!allParagraph.isTimeOut) {
+					allParagraph.isTimeOut = true;
 					var allSpan = allParagraph.querySelectorAll(gDoc.classNames.paragraph);
-					for(let i = 0; i < allSpan.length; i++){
-						if(allSpan[i] && gDoc.doesRectsOverlap(allSpan[i].getBoundingClientRect(), caretRect)){
+					for (let i = 0; i < allSpan.length; i++) {
+						if (allSpan[i] && gDoc.doesRectsOverlap(allSpan[i].getBoundingClientRect(), caretRect)) {
 							this.idTimeOutGetText && clearTimeout(this.idTimeOutGetText);
-							this.idTimeOutGetText = setTimeout(function(){
+							this.idTimeOutGetText = setTimeout(function () {
 								var text = preValidate(allSpan[i].innerText);
 								browser.runtime.sendMessage({
 									message: text
 								}, function (response) {
 									console.log("response: ", response.in, response.out);
 									var gNode = gDoc.findNodeInAllDocument(allSpan[i], allDocument);
-									if(gNode){
+									if (gNode) {
 										processAppendNodeCorrect(response.in, response.out, text, gNode, gDoc, allDocument);
 									}
 									allParagraph.isTimeOut = false;
 								});
 							}, 2000)
+
 						}
 					}
 				}
 			}
-		})		
+		})
 	}
 }
 
-function processAppendNodeCorrect(rawMsg, newMsg, rawMsg1, node, gDoc, allDocument){
+function processAppendNodeCorrect(rawMsg, newMsg, rawMsg1, node, gDoc, allDocument) {
 	gDoc.removeHighlightonNodes(node.index);
-	var newSplited = newMsg.split(' ');
-	var rawSplited = rawMsg.split(' ');
-	for (var i = 0; i < rawSplited.length; i++) {
+	var newSplited = preValidateSpecialChar(newMsg).split(' ');
+	var rawSplited = preValidateSpecialChar(rawMsg).split(' ');
+	var cur = 0;
+	for (var i = 0; i < newSplited.length; i++) {
 		if (newSplited[i] && newSplited[i].length > 0 && newSplited[i] != rawSplited[i]) {
-			var pos = gDoc.convertLocalPosToGlobleNode(rawSplited[i], node);
-			console.log("pos ", JSON.stringify(pos), " | ", allDocument);
+			var pos = gDoc.convertLocalPosToGlobleNode(rawSplited[i], node, cur);
+			// console.log("pos ", JSON.stringify(pos), " | ", allDocument);
 			gDoc.highlight(pos.startIndex, pos.endIndex, gDoc.getGoogleDocument(), rawSplited[i], newSplited[i]);
+
+			cur+=newSplited[i].length;
 		}
 	}
 }
 
-function preValidate(sentence){
+function preValidate(sentence) {
 	return sentence.replaceAll("\u200c", "");
+}
+
+function preValidateSpecialChar(sentence){
+	var validCheckArr = '!\"\',\-\.:;?_\(\)';
+	for(var i in validCheckArr){
+		sentence = sentence.replaceAll(validCheckArr[i], "");
+	}
+	return sentence.replace(/ +(?= )/g,'').replaceAll("\u200c", "");
 }
 
 
