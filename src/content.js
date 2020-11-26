@@ -286,7 +286,7 @@ class GDocsUtil {
 	//- - - - - - - - - - - - - - - - - - - -
 	//Highlight
 	//- - - - - - - - - - - - - - - - - - - -
-	highlight(startIndex, endIndex, googleDocument, rawWord, newWord) {
+	highlight(startIndex, endIndex, googleDocument, rawWord, newWord, start, nodeElement) {
 		for (var i = 0; i < googleDocument.nodes.length; i++) {
 			//Highlight node if its index overlap with the provided index
 			if (
@@ -336,7 +336,9 @@ class GDocsUtil {
 					googleDocument.nodes[i].lineElement,
 					googleDocument.nodes[i].index,
 					rawWord,
-					newWord
+					newWord,
+					start,
+					nodeElement
 				);
 			}
 		}
@@ -377,7 +379,7 @@ class GDocsUtil {
 		return node.text.substring(start, end);
 	}
 
-	createHighlightNode(left, top, width, height, parentElement, parentIndex, rawWord, newWord) {
+	createHighlightNode(left, top, width, height, parentElement, parentIndex, rawWord, newWord, start, nodeElement) {
 		console.log('createHighlightNode ', rawWord, newWord);
 		var highlightNode = document.createElement('div');
 		highlightNode.setAttribute('class', 'dictus_highlight_node dictus_highlight_node_' + parentIndex + " dictus_highlight_node_line_" + rawWord);
@@ -396,10 +398,13 @@ class GDocsUtil {
 		}
 		highlightNode.addEventListener("click", () => {
 			console.log('onClick ', newWord);
+			this.suggestNode.style.opacity = 1;
 			this.suggestNode.style.left = left + 'px';
 			this.suggestNode.style.top = top - 50 + 'px';
 			this.suggestNode.getElementsByClassName('dictus_suggest_word_node')[0].innerHTML = newWord;
 			this.suggestNode.rawMsg = rawWord;
+			this.suggestNode.start = start;
+			this.suggestNode.nodeElement = nodeElement;
 		});
 		parentElement.appendChild(highlightNode);
 	}
@@ -407,6 +412,7 @@ class GDocsUtil {
 
 	initSuggestNode(parentElement){
 		this.suggestNode = document.createElement('div');
+		this.suggestNode.style.opacity = 0;
 		this.suggestNode.setAttribute('class', 'dictus_suggest_node');
 		this.suggestNode.style.position = 'absolute';
 		this.suggestNode.style.width = 50 + 'px';
@@ -415,6 +421,7 @@ class GDocsUtil {
 		this.suggestNode.style.borderStyle = 'solid';
 		this.suggestNode.style.borderWidth = 2 + 'px';
 		this.suggestNode.style.zIndex = 999;
+		this.suggestNode.style.textAlign = 'center';
 		this.suggestNode.addEventListener("click", () => console.log('clicked '));
 		parentElement.appendChild(this.suggestNode);
 
@@ -424,13 +431,30 @@ class GDocsUtil {
 		correctWordNode.style.width = 50 + 'px';
 		correctWordNode.style.height = 30 + 'px';
 		correctWordNode.style.zIndex = 999;
+		correctWordNode.style.textAlign = 'center';
+		correctWordNode.style.paddingTop = 6 + 'px';
 		correctWordNode.addEventListener("click", () => {
-			var elementText = parentElement.innerText;
-			console.log('correct ', parentElement.innerText, " | ", correctWordNode.innerHTML);
-			elementText = elementText.substring(0, elementText.indexOf())
+			this.suggestNode.style.opacity = 0;
+			this.suggestNode.nodeElement.node.innerText = this.suggestNode.nodeElement.node.innerText.substring(0, this.suggestNode.nodeElement.node.innerText.indexOf(this.suggestNode.rawMsg, this.suggestNode.start)) 
+			+ correctWordNode.innerHTML 
+			+ this.suggestNode.nodeElement.node.innerText.substring(this.suggestNode.nodeElement.node.innerText.indexOf(this.suggestNode.rawMsg, this.suggestNode.start) + this.suggestNode.rawMsg.length) 
+			// var itsHighLightNode = document.getElementsByClassName('dictus_highlight_node_line_' + this.suggestNode.rawMsg)[0];
+			// if(itsHighLightNode){
+			// 	itsHighLightNode.remove && itsHighLightNode.remove();
+			// }
 		});
 		this.suggestNode.appendChild(correctWordNode);
 		return this.suggestNode;
+	}
+
+	removeSuggestNodes(){
+		var suggestNodes = document.querySelectorAll(
+			'.dictus_suggest_node'
+		);
+		for (let i = 0; i < suggestNodes.length; i++) {
+			suggestNodes[i].remove();
+		}
+		this.suggestNode = null;
 	}
 
 	removeAllHighlightNodes() {
@@ -499,7 +523,6 @@ class GDocsUtil {
 	convertLocalPosToGlobleNode(text, parentNode, start) {
 		var lineElementText = preValidate(parentNode.lineElement.innerText);
 		var startLocalPos = lineElementText.indexOf(text, start);
-		// console.log("parentNode.lineElement.innerText ", parentNode.lineElement.innerText, " | ", text, " | ", startLocalPos);
 		var startGloblePos = startLocalPos + parentNode.index;
 		var endGloblePos = startGloblePos + text.length;
 		return {
@@ -616,6 +639,7 @@ function init() {
 									message: text
 								}, function (response) {
 									console.log("response: ", response.in, response.out);
+									allDocument = gDoc.getGoogleDocument();
 									var gNode = gDoc.findNodeInAllDocument(allSpan[i], allDocument);
 									if (gNode) {
 										processAppendNodeCorrect(response.in, response.out, text, gNode, gDoc, allDocument);
@@ -634,16 +658,16 @@ function init() {
 
 function processAppendNodeCorrect(rawMsg, newMsg, rawMsg1, node, gDoc, allDocument) {
 	gDoc.removeHighlightonNodes(node.index);
+	gDoc.removeSuggestNodes();
 	var newSplited = preValidateSpecialChar(newMsg).split(' ');
 	var rawSplited = preValidateSpecialChar(rawMsg).split(' ');
 	var cur = 0;
 	for (var i = 0; i < newSplited.length; i++) {
 		if (newSplited[i] && newSplited[i].length > 0 && newSplited[i] != rawSplited[i]) {
 			var pos = gDoc.convertLocalPosToGlobleNode(rawSplited[i], node, cur);
-			// console.log("pos ", JSON.stringify(pos), " | ", allDocument);
-			gDoc.highlight(pos.startIndex, pos.endIndex, gDoc.getGoogleDocument(), rawSplited[i], newSplited[i]);
+			gDoc.highlight(pos.startIndex, pos.endIndex, gDoc.getGoogleDocument(), rawSplited[i], newSplited[i], cur, node);
 
-			cur+=newSplited[i].length;
+			cur+=newSplited[i].length + 1;
 		}
 	}
 }
