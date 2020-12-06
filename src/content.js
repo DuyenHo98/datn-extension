@@ -1,42 +1,38 @@
-var browser = browser || chrome
+var browser = browser || chrome;
 
 var GDocsClassName = {
-	paragraph: 'kix-paragraphrenderer',
-	wordNode: 'kix-wordhtmlgenerator-word-node'
-}
+	paragraph: "kix-paragraphrenderer",
+	wordNode: "kix-wordhtmlgenerator-word-node",
+};
 
 class GDocsUtil {
-
-	constructor() {
-
-	}
+	constructor() {}
 
 	classNames = {
-		paragraph: '.kix-paragraphrenderer',
-		line: '.kix-lineview',
-		selectionOverlay: '.kix-selection-overlay',
-		wordNode: '.kix-wordhtmlgenerator-word-node',
-		cursor: '.kix-cursor',
-		cursorName: '.kix-cursor-name',
-		cursorCaret: '.kix-cursor-caret',
+		paragraph: ".kix-paragraphrenderer",
+		line: ".kix-lineview",
+		selectionOverlay: ".kix-selection-overlay",
+		wordNode: ".kix-wordhtmlgenerator-word-node",
+		cursor: ".kix-cursor",
+		cursorName: ".kix-cursor-name",
+		cursorCaret: ".kix-cursor-caret",
 	};
 
 	cleanDocumentText(text) {
-		var cleanedText = text.replace(/[\u200B\u200C]/g, '');
+		var cleanedText = text.replace(/[\u200B\u200C]/g, "");
 		var nonBreakingSpaces = String.fromCharCode(160);
-		var regex = new RegExp(nonBreakingSpaces, 'g');
-		cleanedText = cleanedText.replace(regex, ' ');
+		var regex = new RegExp(nonBreakingSpaces, "g");
+		cleanedText = cleanedText.replace(regex, " ");
 		return cleanedText;
 	}
 
 	getValidCharactersRegex() {
-		return '\\wæøåÆØÅéáÉÁöÖ';
+		return "\\wæøåÆØÅéáÉÁöÖ";
 	}
 
 	isWordBoundary(character) {
-		return character.match('[' + this.getValidCharactersRegex() + ']') == null;
+		return character.match("[" + this.getValidCharactersRegex() + "]") == null;
 	}
-
 
 	// Finds all the text and the caret position in the google docs document.
 	getGoogleDocument() {
@@ -48,9 +44,11 @@ class GDocsUtil {
 		var nodes = [];
 		var lineCount = 0;
 		var globalIndex = 0;
-		var selectedText = '';
+		var selectedText = "";
 		var exportedSelectionRect = undefined;
-		var paragraphrenderers = document.querySelectorAll(this.classNames.paragraph);
+		var paragraphrenderers = document.querySelectorAll(
+			this.classNames.paragraph
+		);
 
 		if (this.containsUserCaretDom()) {
 			caret = this.getUserCaretDom();
@@ -58,22 +56,41 @@ class GDocsUtil {
 		}
 
 		for (var i = 0; i < paragraphrenderers.length; i++) {
-			var lineviews = paragraphrenderers[i].querySelectorAll(this.classNames.line);
+			var lineviews = paragraphrenderers[i].querySelectorAll(
+				this.classNames.line
+			);
 			for (var j = 0; j < lineviews.length; j++) {
-				var lineText = '';
-				var selectionOverlays = lineviews[j].querySelectorAll(this.classNames.selectionOverlay);
-				var wordhtmlgeneratorWordNodes = lineviews[j].querySelectorAll(this.classNames.wordNode);
+				var lineText = "";
+				var selectionOverlays = lineviews[j].querySelectorAll(
+					this.classNames.selectionOverlay
+				);
+				var wordhtmlgeneratorWordNodes = lineviews[j].querySelectorAll(
+					this.classNames.wordNode
+				);
 				for (var k = 0; k < wordhtmlgeneratorWordNodes.length; k++) {
-					var wordhtmlgeneratorWordNodeRect = wordhtmlgeneratorWordNodes[k].getBoundingClientRect();
+					var wordhtmlgeneratorWordNodeRect = wordhtmlgeneratorWordNodes[
+						k
+					].getBoundingClientRect();
 					if (caretRect) {
-						if (this.doesRectsOverlap(wordhtmlgeneratorWordNodeRect, caretRect)) {
+						if (
+							this.doesRectsOverlap(wordhtmlgeneratorWordNodeRect, caretRect)
+						) {
 							var caretXStart =
 								caretRect.left - wordhtmlgeneratorWordNodeRect.left;
+							console.log(
+								caretRect.left,
+								wordhtmlgeneratorWordNodeRect.left,
+								caretXStart,
+								wordhtmlgeneratorWordNodeRect,
+								lineviews,
+								" dsadsa"
+							);
 							var localCaretIndex = this.getLocalCaretIndex(
 								caretXStart,
 								wordhtmlgeneratorWordNodes[k],
 								lineviews[j]
 							);
+
 							caretIndex = globalIndex + localCaretIndex;
 							caretLineIndex = lineText.length + localCaretIndex;
 							caretLine = lineCount;
@@ -110,8 +127,8 @@ class GDocsUtil {
 							);
 							var selectionEndIndex = this.getLocalCaretIndex(
 								selectionRect.left +
-								selectionRect.width -
-								wordhtmlgeneratorWordNodeRect.left,
+									selectionRect.width -
+									wordhtmlgeneratorWordNodeRect.left,
 								wordhtmlgeneratorWordNodes[k],
 								lineviews[j]
 							);
@@ -173,10 +190,11 @@ class GDocsUtil {
 		for (var i = 0; i < carets.length; i++) {
 			var nameDom = carets[i].querySelectorAll(this.classNames.cursorName);
 			var name = nameDom[0].innerText;
-			if (!name) return carets[i].querySelectorAll(this.classNames.cursorCaret)[0];
+			if (!name)
+				return carets[i].querySelectorAll(this.classNames.cursorCaret)[0];
 		}
 
-		throw 'Could not find the users cursor';
+		throw "Could not find the users cursor";
 	}
 
 	// Gets the caret index on the innerText of the element.
@@ -186,14 +204,14 @@ class GDocsUtil {
 	getLocalCaretIndex(caretX, element, simulateElement) {
 		//Creates a span DOM for each letter
 		var text = this.cleanDocumentText(element.innerText);
-		var container = document.createElement('div');
+		var container = document.createElement("div");
 		var letterSpans = [];
 		for (var i = 0; i < text.length; i++) {
-			var textNode = document.createElement('span');
+			var textNode = document.createElement("span");
 			textNode.innerText = text[i];
 			textNode.style.cssText = element.style.cssText;
 			// "pre" = if there are multiple white spaces, they will all be rendered. Default behavior is for them to be collapesed
-			textNode.style.whiteSpace = 'pre';
+			textNode.style.whiteSpace = "pre";
 			letterSpans.push(textNode);
 			container.appendChild(textNode);
 		}
@@ -238,7 +256,7 @@ class GDocsUtil {
 		if (!line) return;
 		if (line.length == 0)
 			return {
-				word: '',
+				word: "",
 				startIndex: googleDocument.caret.index,
 				endIndex: googleDocument.caret.index,
 			};
@@ -286,7 +304,15 @@ class GDocsUtil {
 	//- - - - - - - - - - - - - - - - - - - -
 	//Highlight
 	//- - - - - - - - - - - - - - - - - - - -
-	highlight(startIndex, endIndex, googleDocument, rawWord, newWord, start, nodeElement) {
+	highlight(
+		startIndex,
+		endIndex,
+		googleDocument,
+		rawWord,
+		newWord,
+		start,
+		nodeElement
+	) {
 		for (var i = 0; i < googleDocument.nodes.length; i++) {
 			//Highlight node if its index overlap with the provided index
 			if (
@@ -305,7 +331,9 @@ class GDocsUtil {
 				);
 				if (!textToHighlight.trim()) continue;
 
-				var parentRect = googleDocument.nodes[i].lineElement.getBoundingClientRect();
+				var parentRect = googleDocument.nodes[
+					i
+				].lineElement.getBoundingClientRect();
 				var nodeRect = googleDocument.nodes[i].node.getBoundingClientRect();
 				var leftPosOffset = 0;
 				var rightPosOffset = nodeRect.width;
@@ -328,6 +356,8 @@ class GDocsUtil {
 						googleDocument.nodes[i].lineElement
 					);
 				}
+
+				console.log(nodeRect.left, parentRect.left, leftPosOffset, "hihi");
 				this.createHighlightNode(
 					nodeRect.left - parentRect.left + leftPosOffset,
 					nodeRect.top - parentRect.top,
@@ -345,7 +375,7 @@ class GDocsUtil {
 	}
 
 	getText(startIndex, endIndex, googleDocument) {
-		var text = '';
+		var text = "";
 		for (var i = 0; i < googleDocument.nodes.length; i++) {
 			if (
 				this.doesRangesOverlap(
@@ -379,78 +409,125 @@ class GDocsUtil {
 		return node.text.substring(start, end);
 	}
 
-	createHighlightNode(left, top, width, height, parentElement, parentIndex, rawWord, newWord, start, nodeElement) {
-		console.log('createHighlightNode ', rawWord, newWord);
-		var highlightNode = document.createElement('div');
-		highlightNode.setAttribute('class', 'dictus_highlight_node dictus_highlight_node_' + parentIndex + " dictus_highlight_node_line_" + rawWord);
-		highlightNode.style.position = 'absolute';
-		highlightNode.style.left = left + 'px';
-		highlightNode.style.top = top + 'px';
-		highlightNode.style.width = width + 'px';
-		highlightNode.style.height = height + 'px';
-		highlightNode.style.borderBottomColor = '#FF0000';
-		highlightNode.style.borderBottomStyle = 'solid';
-		highlightNode.style.borderBottomWidth = 2 + 'px';
+	createHighlightNode(
+		left,
+		top,
+		width,
+		height,
+		parentElement,
+		parentIndex,
+		rawWord,
+		newWord,
+		start,
+		nodeElement
+	) {
+		console.log("createHighlightNode ", rawWord, newWord, parentIndex, start);
+		var highlightNode = document.createElement("div");
+		highlightNode.setAttribute(
+			"class",
+			"dictus_highlight_node dictus_highlight_node_" +
+				parentIndex +
+				" dictus_highlight_node_line_" +
+				rawWord
+		);
+		highlightNode.style.position = "absolute";
+		highlightNode.style.left = left + "px";
+		highlightNode.style.top = top + "px";
+		highlightNode.style.width = width + "px";
+		highlightNode.style.height = height + "px";
+		highlightNode.style.borderBottomColor = "#FF0000";
+		highlightNode.style.borderBottomStyle = "solid";
+		highlightNode.style.borderBottomWidth = 2 + "px";
 		highlightNode.style.opacity = 0.5;
 		highlightNode.style.zIndex = 999;
-		if(!this.suggestNode){
+		if (!this.suggestNode) {
 			this.initSuggestNode(parentElement);
 		}
 		highlightNode.addEventListener("click", () => {
-			console.log('onClick ', newWord);
+			console.log(
+				"onClick ",
+				newWord,
+				parentIndex,
+				start,
+				nodeElement,
+				parentElement
+			);
 			this.suggestNode.style.opacity = 1;
-			this.suggestNode.style.left = left + 'px';
-			this.suggestNode.style.top = top - 50 + 'px';
-			this.suggestNode.getElementsByClassName('dictus_suggest_word_node')[0].innerHTML = newWord;
-			this.suggestNode.rawMsg = rawWord;
+			this.suggestNode.style.left = left + "px";
+			this.suggestNode.style.top = top - 35 + "px";
+			this.suggestNode.getElementsByClassName(
+				"dictus_suggest_word_node"
+			)[0].innerHTML = newWord;
+			this.suggestNode.rawWord = rawWord;
 			this.suggestNode.start = start;
 			this.suggestNode.nodeElement = nodeElement;
+			this.suggestNode.newWord = newWord;
+			this.suggestNode.highlightNode = highlightNode;
 		});
 		parentElement.appendChild(highlightNode);
 	}
 
-
-	initSuggestNode(parentElement){
-		this.suggestNode = document.createElement('div');
+	initSuggestNode(parentElement) {
+		this.suggestNode = document.createElement("div");
 		this.suggestNode.style.opacity = 0;
-		this.suggestNode.setAttribute('class', 'dictus_suggest_node');
-		this.suggestNode.style.position = 'absolute';
-		this.suggestNode.style.width = 50 + 'px';
-		this.suggestNode.style.height = 30 + 'px';
-		this.suggestNode.style.borderColor = '#000000';
-		this.suggestNode.style.borderStyle = 'solid';
-		this.suggestNode.style.borderWidth = 2 + 'px';
+		this.suggestNode.setAttribute("class", "dictus_suggest_node");
+		this.suggestNode.style.position = "absolute";
+		this.suggestNode.style.width = 50 + "px";
+		this.suggestNode.style.height = 25 + "px";
+		this.suggestNode.style.borderColor = "#bebebe";
+		this.suggestNode.style.borderStyle = "solid";
+		this.suggestNode.style.borderWidth = 1 + "px";
 		this.suggestNode.style.zIndex = 999;
-		this.suggestNode.style.textAlign = 'center';
-		this.suggestNode.addEventListener("click", () => console.log('clicked '));
+		this.suggestNode.style.textAlign = "center";
+		this.suggestNode.style.backgroundColor = "#fff";
+		this.suggestNode.style.borderRadius = "3px";
+		this.suggestNode.addEventListener("click", () => console.log("clicked "));
 		parentElement.appendChild(this.suggestNode);
 
-		var correctWordNode = document.createElement('div');
-		correctWordNode.setAttribute('class', 'dictus_suggest_word_node');
-		correctWordNode.style.position = 'absolute';
-		correctWordNode.style.width = 50 + 'px';
-		correctWordNode.style.height = 30 + 'px';
+		var correctWordNode = document.createElement("div");
+		correctWordNode.setAttribute("class", "dictus_suggest_word_node");
+		correctWordNode.style.position = "absolute";
+		correctWordNode.style.width = 50 + "px";
+		correctWordNode.style.height = 30 + "px";
 		correctWordNode.style.zIndex = 999;
-		correctWordNode.style.textAlign = 'center';
-		correctWordNode.style.paddingTop = 6 + 'px';
+		correctWordNode.style.textAlign = "center";
+		correctWordNode.style.paddingTop = 6 + "px";
 		correctWordNode.addEventListener("click", () => {
 			this.suggestNode.style.opacity = 0;
-			this.suggestNode.nodeElement.node.innerText = this.suggestNode.nodeElement.node.innerText.substring(0, this.suggestNode.nodeElement.node.innerText.indexOf(this.suggestNode.rawMsg, this.suggestNode.start)) 
-			+ correctWordNode.innerHTML 
-			+ this.suggestNode.nodeElement.node.innerText.substring(this.suggestNode.nodeElement.node.innerText.indexOf(this.suggestNode.rawMsg, this.suggestNode.start) + this.suggestNode.rawMsg.length) 
-			// var itsHighLightNode = document.getElementsByClassName('dictus_highlight_node_line_' + this.suggestNode.rawMsg)[0];
-			// if(itsHighLightNode){
-			// 	itsHighLightNode.remove && itsHighLightNode.remove();
-			// }
+			// let text = this.suggestNode.nodeElement.node.innerText;
+			// text =
+			// 	text.substring(0, this.suggestNode.start) +
+			// 	this.suggestNode.newWord +
+			// 	text
+			// 		.substring(
+			// 			this.suggestNode.start + this.suggestNode.rawWord.length + 1
+			// 		)
+			// 		.trim();
+			// this.suggestNode.nodeElement.node.innerText = text;
+
+			let nodeElement = this.suggestNode.nodeElement;
+			let caret = this.getUserCaretDom();
+			let caretRect = caret.getBoundingClientRect();
+			let wordRect = nodeElement.node.getBoundingClientRect();
+			var caretXStart = caretRect.left - wordRect.left;
+			var localCaretIndex = this.getLocalCaretIndex(
+				caretXStart,
+				nodeElement.node,
+				nodeElement.lineElement
+			);
+
+			moveCursor(this.suggestNode.start - localCaretIndex);
+			deleteChars(this.suggestNode.rawWord.length);
+			pasteText(this.suggestNode.newWord);
+
+			this.suggestNode.highlightNode.remove();
 		});
 		this.suggestNode.appendChild(correctWordNode);
 		return this.suggestNode;
 	}
 
-	removeSuggestNodes(){
-		var suggestNodes = document.querySelectorAll(
-			'.dictus_suggest_node'
-		);
+	removeSuggestNodes() {
+		var suggestNodes = document.querySelectorAll(".dictus_suggest_node");
 		for (let i = 0; i < suggestNodes.length; i++) {
 			suggestNodes[i].remove();
 		}
@@ -458,9 +535,7 @@ class GDocsUtil {
 	}
 
 	removeAllHighlightNodes() {
-		var highlightNodes = document.querySelectorAll(
-			'.dictus_highlight_node'
-		);
+		var highlightNodes = document.querySelectorAll(".dictus_highlight_node");
 		for (let i = 0; i < highlightNodes.length; i++) {
 			highlightNodes[i].remove();
 		}
@@ -468,16 +543,14 @@ class GDocsUtil {
 
 	removeHighlightonNodes(nodeIndex) {
 		var highlightNodes = document.querySelectorAll(
-			'.dictus_highlight_node_' + nodeIndex
+			".dictus_highlight_node_" + nodeIndex
 		);
 
 		for (let i = 0; i < highlightNodes.length; i++) {
-			console.log('voday di');
+			console.log("voday di", highlightNodes[i].className, "a");
 			highlightNodes[i].remove();
 		}
 	}
-
-
 
 	//Index: The index on the local element
 	getPositionOfIndex(index, element, simulateElement) {
@@ -488,14 +561,14 @@ class GDocsUtil {
 
 		//Creates a span DOM for each letter
 		var text = this.cleanDocumentText(element.innerText);
-		var container = document.createElement('div');
+		var container = document.createElement("div");
 		var letterSpans = [];
 		for (var i = 0; i < index; i++) {
-			var textNode = document.createElement('span');
+			var textNode = document.createElement("span");
 			textNode.innerText = text[i];
 			textNode.style.cssText = element.style.cssText;
 			//"pre" = if there are multiple white spaces, they will all be rendered. Default behavior is for them to be collapesed
-			textNode.style.whiteSpace = 'pre';
+			textNode.style.whiteSpace = "pre";
 			letterSpans.push(textNode);
 			container.appendChild(textNode);
 		}
@@ -511,7 +584,7 @@ class GDocsUtil {
 	}
 
 	findNodeInAllDocument(node, googleDocument) {
-		var lineElement = node.getElementsByClassName('kix-lineview')[0];
+		var lineElement = node.getElementsByClassName("kix-lineview")[0];
 		for (let i = 0; i < googleDocument.nodes.length; i++) {
 			if (googleDocument.nodes[i].lineElement == lineElement) {
 				return googleDocument.nodes[i];
@@ -522,27 +595,33 @@ class GDocsUtil {
 
 	convertLocalPosToGlobleNode(text, parentNode, start) {
 		var lineElementText = preValidate(parentNode.lineElement.innerText);
+		// var lineElementText = parentNode.lineElement.innerText;
 		var startLocalPos = lineElementText.indexOf(text, start);
 		var startGloblePos = startLocalPos + parentNode.index;
 		var endGloblePos = startGloblePos + text.length;
+		console.log(
+			"line ele",
+			text,
+			start,
+			startLocalPos,
+			startGloblePos,
+			endGloblePos
+		);
+
 		return {
 			startIndex: startGloblePos,
-			endIndex: endGloblePos
-		}
+			endIndex: endGloblePos,
+		};
 	}
-
 }
-
 
 function getInputsByValue() {
 	var allInputs = document.getElementsByTagName("input");
 	var results = [];
-	for (var x = 0; x < allInputs.length; x++)
-		results.push(allInputs[x]);
+	for (var x = 0; x < allInputs.length; x++) results.push(allInputs[x]);
 
 	var allTextArea = document.getElementsByTagName("textarea");
-	for (var x = 0; x < allTextArea.length; x++)
-		results.push(allTextArea[x]);
+	for (var x = 0; x < allTextArea.length; x++) results.push(allTextArea[x]);
 
 	return results;
 }
@@ -550,8 +629,12 @@ function getInputsByValue() {
 function getValidInput(allInputs) {
 	var results = [];
 	for (var i in allInputs) {
-		if (allInputs[i].type == 'text' || allInputs[i].type == "textarea") {
-			console.log('=== getValidInput in ', allInputs[i], allInputs[i] instanceof Array)
+		if (allInputs[i].type == "text" || allInputs[i].type == "textarea") {
+			console.log(
+				"=== getValidInput in ",
+				allInputs[i],
+				allInputs[i] instanceof Array
+			);
 			if (allInputs[i] instanceof Array) {
 				results.push(allInputs[i][0]);
 			} else {
@@ -567,9 +650,13 @@ function getValidInputForGDocs() {
 	var allParagraph = document.getElementsByClassName(GDocsClassName.wordNode);
 	var results = [];
 	for (var i in allParagraph) {
-		if (allParagraph[i] && allParagraph[i].innerText && allParagraph[i].innerText.length > 0) {
+		if (
+			allParagraph[i] &&
+			allParagraph[i].innerText &&
+			allParagraph[i].innerText.length > 0
+		) {
 			allParagraph[i].value = allParagraph[i].innerText;
-			allParagraph[i].type = 'text';
+			allParagraph[i].type = "text";
 			results.push(allParagraph[i]);
 		}
 	}
@@ -586,7 +673,7 @@ function getValidInputForGDocs() {
 // 	} else {
 
 // 		const content = document.getElementsByClassName('kix-wordhtmlgenerator-word-node')[0]
-// 		console.log('=== ahih content ', content);		
+// 		console.log('=== ahih content ', content);
 // 		content.addEventListener('DOMSubtreeModified', () => console.log('change'))
 
 // 		var validInput = getValidInput(allInputs);
@@ -618,77 +705,230 @@ function getValidInputForGDocs() {
 function init() {
 	var allInputs = getValidInputForGDocs();
 	if (allInputs.length == 0) {
-		console.log('=== found 0 input');
+		console.log("=== found 0 input");
 	} else {
 		var gDoc = new GDocsUtil();
 		var allDocument = gDoc.getGoogleDocument();
-		var allParagraph = document.getElementsByClassName('kix-paginateddocumentplugin')[0];
-		allParagraph.addEventListener('DOMSubtreeModified', () => {
+		var allParagraph = document.getElementsByClassName(
+			"kix-paginateddocumentplugin"
+		)[0];
+		allParagraph.addEventListener("DOMSubtreeModified", () => {
 			if (gDoc.containsUserCaretDom()) {
 				caret = gDoc.getUserCaretDom();
 				caretRect = caret.getBoundingClientRect();
 				if (!allParagraph.isTimeOut) {
 					allParagraph.isTimeOut = true;
-					var allSpan = allParagraph.querySelectorAll(gDoc.classNames.paragraph);
+					var allSpan = allParagraph.querySelectorAll(
+						gDoc.classNames.paragraph
+					);
 					for (let i = 0; i < allSpan.length; i++) {
-						if (allSpan[i] && gDoc.doesRectsOverlap(allSpan[i].getBoundingClientRect(), caretRect)) {
+						if (
+							allSpan[i] &&
+							gDoc.doesRectsOverlap(
+								allSpan[i].getBoundingClientRect(),
+								caretRect
+							)
+						) {
 							this.idTimeOutGetText && clearTimeout(this.idTimeOutGetText);
-							this.idTimeOutGetText = setTimeout(function () {
-								var text = preValidate(allSpan[i].innerText);
-								browser.runtime.sendMessage({
-									message: text
-								}, function (response) {
-									console.log("response: ", response.in, response.out);
-									allDocument = gDoc.getGoogleDocument();
-									var gNode = gDoc.findNodeInAllDocument(allSpan[i], allDocument);
-									if (gNode) {
-										processAppendNodeCorrect(response.in, response.out, text, gNode, gDoc, allDocument);
-									}
+							this.idTimeOutGetText = setTimeout(() => {
+								let paragraph = allSpan[i];
+								let lines = paragraph.getElementsByClassName(
+									"kix-wordhtmlgenerator-word-node"
+								);
+								let text = "";
+								for (let i = 0; i < lines.length; i++) {
+									text += lines[i].innerText;
+								}
+								text = preValidate(text);
+								if (this.beforeText && this.beforeText === text) {
 									allParagraph.isTimeOut = false;
-								});
-							}, 2000)
+									return;
+								}
+								this.beforeText = text;
+								console.log("hihi haha", "|" + text + "|");
+								browser.runtime.sendMessage(
+									{
+										message: text,
+									},
+									function (response) {
+										console.log(
+											"response: ",
+											response.in,
+											"||||||",
+											response.out
+										);
+										allDocument = gDoc.getGoogleDocument();
+										// var gNode = gDoc.findNodeInAllDocument(allSpan[i], allDocument);
+										// if (gNode) {
+										// 	processAppendNodeCorrect(response.in, response.out, text, gNode, gDoc, allDocument);
+										// }
 
+										processAppendNodeCorrect(
+											response.in,
+											response.out,
+											text,
+											gDoc,
+											allDocument,
+											lines
+										);
+
+										allParagraph.isTimeOut = false;
+									}
+								);
+							}, 2000);
 						}
 					}
 				}
 			}
-		})
+		});
 	}
 }
 
-function processAppendNodeCorrect(rawMsg, newMsg, rawMsg1, node, gDoc, allDocument) {
-	gDoc.removeHighlightonNodes(node.index);
-	gDoc.removeSuggestNodes();
-	var newSplited = preValidateSpecialChar(newMsg).split(' ');
-	var rawSplited = preValidateSpecialChar(rawMsg).split(' ');
-	var cur = 0;
-	for (var i = 0; i < newSplited.length; i++) {
-		if (newSplited[i] && newSplited[i].length > 0 && newSplited[i] != rawSplited[i]) {
-			var pos = gDoc.convertLocalPosToGlobleNode(rawSplited[i], node, cur);
-			gDoc.highlight(pos.startIndex, pos.endIndex, gDoc.getGoogleDocument(), rawSplited[i], newSplited[i], cur, node);
-
-			cur+=newSplited[i].length + 1;
+function findNodeIndexInDoc(lineElement, googleDocument) {
+	for (let i = 0; i < googleDocument.nodes.length; i++) {
+		if (googleDocument.nodes[i].node == lineElement) {
+			return i;
 		}
 	}
+	return -1;
+}
+
+function processAppendNodeCorrect(
+	rawMsg,
+	newMsg,
+	rawMsg1,
+	gDoc,
+	allDocument,
+	lines
+) {
+	gDoc.removeSuggestNodes();
+	var newSplited = preValidateSpecialChar(newMsg).split(" ");
+	let j = 0;
+	let nodeId = -1;
+	for (let l = 0; l < lines.length; l++) {
+		if (nodeId < 0) nodeId = findNodeIndexInDoc(lines[l], allDocument); //todo: check no id found
+		if (nodeId < 0) continue;
+
+		let node = allDocument.nodes[nodeId];
+		gDoc.removeHighlightonNodes(node.index);
+
+		let line = lines[l].innerText;
+
+		var rawSplited = preValidateSpecialChar(line).split(" ");
+		// var rawSplited = line.split(" ");
+		// console.log("split ",rawSplited)
+		var cur = 0;
+		var vCur = 0;
+		for (var i = 0; i < rawSplited.length; i++) {
+			// let text = preValidate(rawSplited[i]);
+			let text = rawSplited[i];
+			if (newSplited[j] && newSplited[j].length > 0 && newSplited[j] != text) {
+				var pos = gDoc.convertLocalPosToGlobleNode(text, node, vCur);
+				gDoc.highlight(
+					pos.startIndex,
+					pos.endIndex,
+					gDoc.getGoogleDocument(),
+					text,
+					newSplited[j],
+					cur,
+					node
+				);
+			}
+			cur += rawSplited[i].length + 1;
+			if (text.length > 0) {
+				vCur = text.length + 1;
+			}
+
+			j++;
+		}
+		nodeId++;
+	}
+	// var rawSplited = preValidateSpecialChar(rawMsg).split(' ');
+	// var cur = 0;
+	// for (var i = 0; i < newSplited.length; i++) {
+	// 	if (newSplited[i] && newSplited[i].length > 0 && newSplited[i] != rawSplited[i]) {
+	// 		var pos = gDoc.convertLocalPosToGlobleNode(rawSplited[i], node, cur);
+	// 		gDoc.highlight(pos.startIndex, pos.endIndex, gDoc.getGoogleDocument(), rawSplited[i], newSplited[i], cur, node);
+
+	// 		cur+=newSplited[i].length + 1;
+	// 	}
+	// }
 }
 
 function preValidate(sentence) {
 	return sentence.replaceAll("\u200c", "");
 }
 
-function preValidateSpecialChar(sentence){
-	var validCheckArr = '!\"\',\-\.:;?_\(\)';
-	for(var i in validCheckArr){
+function preValidateSpecialChar(sentence) {
+	var validCheckArr = "!\"',-.:;?_()";
+	for (var i in validCheckArr) {
 		sentence = sentence.replaceAll(validCheckArr[i], "");
 	}
-	return sentence.replace(/ +(?= )/g,'').replaceAll("\u200c", "");
+	return sentence.replace(/ +(?= )/g, "").replaceAll("\u200c", "");
 }
-
 
 document.onreadystatechange = function () {
 	if (document.readyState == "complete") {
 		setTimeout(function () {
 			init();
+
+			// pasteText("Dsadsada");
+			// pressButton();
 		}, 500);
+	}
+};
+
+function pasteText(text) {
+	var el = document.getElementsByClassName("docs-texteventtarget-iframe")[0];
+	el = el.contentDocument.querySelector("[contenteditable=true]");
+
+	var data = new DataTransfer();
+	data.setData("text/plain", text);
+	var paste = new ClipboardEvent("paste", {
+		clipboardData: data,
+		data: text,
+		dataType: "text/plain",
+	});
+	paste.docs_plus_ = true;
+
+	el.dispatchEvent(paste);
+}
+
+// function pressButton() {
+// 	var el = document.getElementsByClassName("docs-texteventtarget-iframe")[0];
+// 	el = el.contentDocument.querySelector("[contenteditable=true]");
+
+// 	let obj = { bubbles: true, screenX: 312, screenY: 122 };
+//     el.dispatchEvent(new MouseEvent("mouseenter", obj));
+//     el.dispatchEvent(new MouseEvent("mousedown", obj));
+//     el.dispatchEvent(new MouseEvent("mouseup", obj));
+//     el.dispatchEvent(new MouseEvent("click", obj));
+//     el.dispatchEvent(new MouseEvent("mouseleave", obj));
+// };
+
+function moveCursor(amount) {
+	pressKey(amount > 0 ? 39 : 37, Math.abs(amount));
+}
+
+function deleteChars(amount) {
+	pressKey(46, Math.abs(amount));
+}
+
+function pressKey(keyCode, times) {
+	var el = document.getElementsByClassName("docs-texteventtarget-iframe")[0];
+	el = el.contentDocument;
+
+	var data = {
+		keyCode: keyCode,
+		ctrlKey: false,
+		shiftKey: false,
+	};
+	var key_event;
+
+	key_event = new KeyboardEvent("keydown", data);
+	key_event.docs_plus_ = true;
+
+	for (let i = 0; i < times; i++) {
+		el.dispatchEvent(key_event);
 	}
 }
